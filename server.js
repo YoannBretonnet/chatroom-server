@@ -18,12 +18,12 @@ const port = 3001;
 const db = {
   users: {
     'john@chat.io': {
-      password: 'test',
+      password: 'chat2023',
       username: 'John',
       color: '#c23616',
     },
     'carol@chat.io': {
-      password: 'test',
+      password: 'chat2023',
       username: 'Carol',
       color: '#009432',
     },
