@@ -1,73 +1,46 @@
-const express = require ('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const serverless = require("serveless-http");
+const app = express();
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const userRoute = require("../routes/user");
+const authRoute = require("../routes/auth");
+const productRoute = require("../routes/product");
+const cartRoute = require("../routes/cart");
+const orderRoute = require("../routes/order");
+const stripeRoute = require("../routes/stripe")
+const cors = require("cors");
 
-const serverless = require('serverless-http');
-
-const app = express ();
-
-const router = express.Router();
-
-
-const db = {
-  users: {
-    'john@chat.io': {
-      password: 'test',
-      username: 'John',
-      color: '#c23616',
-    },
-    'carol@chat.io': {
-      password: 'test',
-      username: 'Carol',
-      color: '#009432',
-    },
-  }
+const options = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    writeConcern: {
+      j: true,
+      wtimeout: 1000,
+      w: "majority"
+    }
 };
 
+dotenv.config();
 
-router.use(bodyParser.json());
-router.use((request, response, next) => {
- response.header('Access-Control-Allow-Origin', '*');
- // response.header('Access-Control-Allow-Credentials', true);
- response.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
- response.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
- next();
-});
+mongoose
+.connect(process.env.MONGO_URL, options)
+.then(()=> console.log("DB connection sucessfull"))
+.catch((error)=> {
+    console.log(error)
+})
 
-router.get('/', (req, res) => {
-     res.send(`
-    <div style="margin: 5em auto; width: 400px; line-height: 1.5">
-    <p>Server has been launched<p>
-    </div>
-  `);
-});
+app.use(cors());
+app.use(express.json());
+app.use("/.netlify/functions/api/auth", authRoute);
+app.use("/.netlify/functions/api/users", userRoute);
+app.use("/.netlify/functions/api/products", productRoute);
+app.use("/.netlify/functions/api/carts", cartRoute);
+app.use("/.netlify/functions/api/orders", orderRoute);
+app.use("/.netlify/functions/api//checkout", stripeRoute);
 
-router.post('/login', (request, response) => {
-  console.log('>> POST /login', request.body);
-
-  // Extraction des données de la requête provenant du client.
-  const { email, password } = request.body;
-
-  // Vérification des identifiants de connexion proposés auprès de la DB.
-  let username;
-  if (db.users[email] && db.users[email].password === password) {
-    username = db.users[email].username;
-  }
-
-  // Réponse HTTP adaptée.
-  if (username) {
-    console.log('<< 200 OK', username);
-    response.json({
-      pseudo: username,
-    });
-  }
-  else {
-    console.log('<< 401 UNAUTHORIZED');
-    response.status(401).end();
-  }
-});
-
-app.use('/.netlify/functions/api', router);
-
-
+app.listen(process.env.PORT || 5000, ()=> {
+    console.log("server is running")
+})
 
 module.exports.handler = serverless(app);
